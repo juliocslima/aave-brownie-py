@@ -32,6 +32,26 @@ def main():
     print("deposited!")
     # ... how much???
     borrowable_eth, total_debt = get_borrowable_data(lending_pool, account)
+    print("Let's borrow")
+    # DAI in terms of ETH
+    dai_eth_price = get_assets_price(
+        config["networks"][network.show_active()]["dai_eth_price_feed"],
+        "DAI/ETH"
+    )
+    # We multiply by 0.95 as a buffer, to make
+    # sure our healt factor is 'better'
+    amount_dai_to_borrow = (1 / dai_eth_price) * (borrowable_eth * 0.95)
+
+    # borrable_eth -> borrowable_dai * 95%
+    print(f"We going to borrow {amount_dai_to_borrow} DAI")
+
+
+def get_assets_price(price_feed_address, asset_name):
+    asset_eth_price_feed = interface.IAggregatorV3(price_feed_address)
+    latest_price = asset_eth_price_feed.latestRoundData()[1]
+    latest_price = Web3.fromWei(latest_price, "ether")
+    print(f"The {asset_name} price is {float(latest_price)}")
+    return float(latest_price)
 
 
 def approve_erc20(amount, spender, erc20_address, account):
@@ -92,6 +112,7 @@ def get_borrowable_data(lending_pool, account):
         ltv,
         health_factor,
     ) = lending_pool.getUserAccountData(account.address)
+
     available_borrow_eth = Web3.fromWei(available_borrow_eth, "ether")
     total_collateral_eth = Web3.fromWei(total_collateral_eth, "ether")
     total_debt_eth = Web3.fromWei(total_debt_eth, "ether")
