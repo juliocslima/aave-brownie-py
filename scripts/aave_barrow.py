@@ -45,6 +45,42 @@ def main():
     # borrable_eth -> borrowable_dai * 95%
     print(f"We going to borrow {amount_dai_to_borrow} DAI")
 
+    # Now we will borrow
+    dai_address = config["networks"][network.show_active()]["dai_token"]
+    borrow_tx = lending_pool.borrow(
+        dai_address,
+        Web3.toWei(amount_dai_to_borrow, "ether"),
+        1,
+        0,
+        account.address,
+        {"from": account}
+    )
+    borrow_tx.wait(1)
+    print("We brrowed some DAI!")
+    get_borrowable_data(lending_pool, account)
+    repay_all(amount, lending_pool, account)
+    print("We just deposited, borrowed and repay with Aave, Brownie and Chainlink")
+
+
+def repay_all(amount, lending_pool, account):
+    approve_erc20(
+        Web3.toWei(amount, "ether"),
+        lending_pool,
+        config["networks"][network.show_active()]["dai_token"],
+        account,
+    )
+
+    repay_tx = lending_pool.repay(
+        config["networks"][network.show_active()]["dai_token"],
+        amount,
+        1,
+        account.address,
+        {"from": account},
+    )
+
+    repay_tx.wait(1)
+    print("Repayed!")
+
 
 def get_assets_price(price_feed_address, asset_name):
     asset_eth_price_feed = interface.IAggregatorV3(price_feed_address)
